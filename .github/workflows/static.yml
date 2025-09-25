@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zingle AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background: linear-gradient(to bottom right, #121212, #333333);
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        /* Custom scrollbar for textarea */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: #e81e9f;
+            border-radius: 10px;
+            border: 2px solid #1a1a1a;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            background-color: #1a1a1a;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #e81e9f;
+            width: 40px;
+            height: 40px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 sm:p-8 md:p-12">
+    <div class="container p-6 sm:p-8 md:p-10 rounded-xl flex flex-col space-y-6">
+        <!-- Header with brand name -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-vibrant-magenta">Zingle AI</h1>
+            <p class="mt-2 text-sm sm:text-base text-gray-300">Create and transform images with powerful AI</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+            <button id="tab-image-to-image" class="tab-button bg-vibrant-magenta text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-[#c21481] transition-colors duration-300">
+                Image-to-Image
+            </button>
+            <button id="tab-text-to-image" class="tab-button bg-gray-700 text-gray-300 font-bold py-3 px-6 rounded-full hover:bg-gray-600 transition-colors duration-300">
+                Text-to-Image
+            </button>
+        </div>
+
+        <!-- Image-to-Image Tab -->
+        <div id="tab-content-image-to-image" class="tab-content">
+            <div class="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-8">
+                <!-- Input and Controls -->
+                <div class="flex-1 flex flex-col space-y-6">
+                    <h2 class="text-xl sm:text-2xl md:text-3xl font-bold mb-4 text-center text-vibrant-magenta">Image-to-Image Generator</h2>
+                    
+                    <div class="flex flex-col items-center border-2 border-dashed border-gray-600 rounded-lg p-6 hover:border-vibrant-magenta transition-colors duration-300 cursor-pointer" id="upload-box">
+                        <label for="image-upload" class="flex flex-col items-center cursor-pointer">
+                            <svg class="w-10 h-10 text-gray-400 mb-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4.5-4.5 2.5 2.5 3-3L16 15z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-base font-medium text-gray-400">Upload Image</span>
+                        </label>
+                        <input type="file" id="image-upload" accept="image/*" class="hidden" />
+                    </div>
+
+                    <div class="relative w-full aspect-square rounded-lg overflow-hidden border-2 border-gray-600 hidden transition-all duration-500" id="image-preview-container">
+                        <img id="image-preview" src="" alt="Uploaded Image" class="w-full h-full object-contain" />
+                    </div>
+
+                    <div>
+                        <label for="prompt-input-image" class="block text-sm font-medium text-gray-300 mb-2">Enter your prompt</label>
+                        <textarea id="prompt-input-image" rows="4" class="w-full text-sm bg-gray-800 text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-vibrant-magenta transition-colors resize-none custom-scrollbar" placeholder="Example: Transform this image into a pixel art style"></textarea>
+                    </div>
+                    
+                    <button id="generate-button-image" class="w-full bg-vibrant-magenta text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-[#c21481] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Generate Image
+                    </button>
+                </div>
+                
+                <!-- Output Section -->
+                <div class="flex-1 flex flex-col space-y-4 items-center justify-center hidden transition-all duration-500" id="output-section-image">
+                    <h2 class="text-lg sm:text-xl font-semibold text-center text-vibrant-magenta">Output</h2>
+                    <div id="output-container-image" class="relative w-full aspect-square bg-gray-800 rounded-lg flex items-center justify-center border-2 border-gray-600">
+                        <img id="output-image-image" src="" alt="Generated Image" class="w-full h-full object-contain hidden rounded-lg" />
+                        <div id="output-placeholder-image" class="text-gray-500 text-center text-sm p-4">
+                            Your generated image will appear here.
+                        </div>
+                        <div id="loading-message-image" class="hidden flex-col items-center">
+                            <div class="loading-spinner"></div>
+                            <span class="mt-4 text-gray-400 text-sm">Generating image...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Example Prompts Section for Image-to-Image -->
+            <div class="mt-12">
+                <h2 class="text-lg sm:text-xl font-bold text-center text-gray-400 mb-6">Example Prompts (Image-to-Image)</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="Transform this image into a pixel art style.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Pixel+Art" alt="Pixel Art Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">Transform this image into a pixel art style.</p>
+                    </div>
+                     <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="Convert this photo into a watercolor painting.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Watercolor" alt="Watercolor Painting Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">Convert this photo into a watercolor painting.</p>
+                    </div>
+                    <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="Turn this face into a robotic face.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Robot+Face" alt="Robot Face Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">Turn this face into a robotic face.</p>
+                    </div>
+                    <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="Transform a vintage car into a flying car.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Flying+Car" alt="Flying Car Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">Transform a vintage car into a flying car.</p>
+                    </div>
+                    <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="Change this simple room into a luxurious apartment.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Luxury+Apartment" alt="Luxury Apartment Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">Change this simple room into a luxurious apartment.</p>
+                    </div>
+                    <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="Transform a colorful fish into a cartoon style.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Cartoon+Fish" alt="Cartoon Fish Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">Transform a colorful fish into a cartoon style.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Text-to-Image Tab -->
+        <div id="tab-content-text-to-image" class="tab-content hidden">
+            <div class="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-8">
+                 <!-- Input and Controls -->
+                <div class="flex-1 flex flex-col space-y-6">
+                    <h2 class="text-xl sm:text-2xl md:text-3xl font-bold mb-4 text-center text-vibrant-magenta">Text-to-Image Generator</h2>
+                    
+                    <div>
+                        <label for="prompt-input-text" class="block text-sm font-medium text-gray-300 mb-2">Enter your prompt</label>
+                        <textarea id="prompt-input-text" rows="4" class="w-full text-sm bg-gray-800 text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-vibrant-magenta transition-colors resize-none custom-scrollbar" placeholder="Example: A small dog with a red hat, in an animated style"></textarea>
+                    </div>
+                    
+                    <button id="generate-button-text" class="w-full bg-vibrant-magenta text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-[#c21481] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Generate Image
+                    </button>
+                </div>
+
+                <!-- Output Section -->
+                <div class="flex-1 flex flex-col space-y-4 items-center justify-center hidden transition-all duration-500" id="output-section-text">
+                    <h2 class="text-lg sm:text-xl font-semibold text-center text-vibrant-magenta">Output</h2>
+                    <div id="output-container-text" class="relative w-full aspect-square bg-gray-800 rounded-lg flex items-center justify-center border-2 border-gray-600">
+                        <img id="output-image-text" src="" alt="Generated Image" class="w-full h-full object-contain hidden rounded-lg" />
+                        <div id="output-placeholder-text" class="text-gray-500 text-center text-sm p-4">
+                            Your generated image will appear here.
+                        </div>
+                        <div id="loading-message-text" class="hidden flex-col items-center">
+                            <div class="loading-spinner"></div>
+                            <span class="mt-4 text-gray-400 text-sm">Generating image...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Example Prompts Section for Text-to-Image -->
+            <div class="mt-12">
+                <h2 class="text-lg sm:text-xl font-bold text-center text-gray-400 mb-6">Example Prompts (Text-to-Image)</h2>
+                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="A magical forest with glowing mushrooms.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Magical+Forest" alt="Magical Forest Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">A magical forest with glowing mushrooms.</p>
+                    </div>
+                    <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="A spaceship flying through the stars, in a retro style.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Spaceship" alt="Spaceship Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">A spaceship flying through the stars, in a retro style.</p>
+                    </div>
+                    <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="A cyberpunk city, at night.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Cyberpunk+City" alt="Cyberpunk City Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">A cyberpunk city, at night.</p>
+                    </div>
+                     <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="An ancient Indian temple, with detailed carvings.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Indian+Temple" alt="Indian Temple Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">An ancient Indian temple, with detailed carvings.</p>
+                    </div>
+                     <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="A small dog with a red hat, in an animated style.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Red+Hat+Dog" alt="Red Hat Dog Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">A small dog with a red hat, in an animated style.</p>
+                    </div>
+                     <div class="example-card bg-gray-800 rounded-lg p-4 shadow-lg cursor-pointer hover:bg-gray-700 transition-colors duration-300" data-prompt="A stunning view of a huge waterfall with a colorful rainbow.">
+                        <div class="w-full aspect-square rounded-lg overflow-hidden mb-2">
+                             <img src="https://placehold.co/400x400/2d3748/cbd5e0?text=Waterfall" alt="Waterfall Example" class="w-full h-full object-cover" />
+                        </div>
+                        <p class="text-sm text-center text-gray-300">A stunning view of a huge waterfall with a colorful rainbow.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.5)',
+                    },
+                    colors: {
+                        'custom-gray': '#1c1c1e',
+                        'custom-dark': '#121212',
+                        'vibrant-magenta': '#e81e9f'
+                    }
+                },
+            },
+        };
+    </script>
+    <script type="module">
+        const apiKey = "";
+        const apiImageToImage = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=" + apiKey;
+        const apiTextToImage = "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=" + apiKey;
+
+        // Image-to-Image elements
+        const fileInput = document.getElementById('image-upload');
+        const promptInputImage = document.getElementById('prompt-input-image');
+        const generateButtonImage = document.getElementById('generate-button-image');
+        const uploadBox = document.getElementById('upload-box');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const outputSectionImage = document.getElementById('output-section-image');
+        const outputImageImage = document.getElementById('output-image-image');
+        const outputPlaceholderImage = document.getElementById('output-placeholder-image');
+        const loadingMessageImage = document.getElementById('loading-message-image');
+        let uploadedImageBase64 = null;
+
+        // Text-to-Image elements
+        const promptInputText = document.getElementById('prompt-input-text');
+        const generateButtonText = document.getElementById('generate-button-text');
+        const outputSectionText = document.getElementById('output-section-text');
+        const outputImageText = document.getElementById('output-image-text');
+        const outputPlaceholderText = document.getElementById('output-placeholder-text');
+        const loadingMessageText = document.getElementById('loading-message-text');
+
+        // Tab elements
+        const tabs = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Example prompts
+        const exampleCards = document.querySelectorAll('.example-card');
+
+        // Tab switching logic
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active styling from all tabs
+                tabs.forEach(item => {
+                    item.classList.remove('bg-vibrant-magenta', 'text-white', 'hover:bg-[#c21481]');
+                    item.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600');
+                });
+                // Hide all tab contents
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+
+                // Add active styling to the clicked tab
+                tab.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-gray-600');
+                tab.classList.add('bg-vibrant-magenta', 'text-white', 'hover:bg-[#c21481]');
+
+                // Show the corresponding content
+                const tabId = tab.id.replace('tab-', 'tab-content-');
+                document.getElementById(tabId).classList.remove('hidden');
+            });
+        });
+
+        // Example prompt click logic
+        exampleCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const prompt = card.dataset.prompt;
+                if (document.getElementById('tab-content-image-to-image').classList.contains('hidden')) {
+                    promptInputText.value = prompt;
+                } else {
+                    promptInputImage.value = prompt;
+                }
+            });
+        });
+
+        // Image-to-Image Logic
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                uploadedImageBase64 = reader.result.split(',')[1];
+                imagePreview.src = reader.result;
+                imagePreviewContainer.classList.remove('hidden');
+                uploadBox.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        generateButtonImage.addEventListener('click', async () => {
+            if (!uploadedImageBase64 || !promptInputImage.value) {
+                alert('Please upload an image and enter a prompt.');
+                return;
+            }
+            outputSectionImage.classList.remove('hidden');
+            generateButtonImage.disabled = true;
+            loadingMessageImage.classList.remove('hidden');
+            outputImageImage.classList.add('hidden');
+            outputPlaceholderImage.classList.add('hidden');
+            const payload = {
+                contents: [
+                    {
+                        parts: [
+                            { text: promptInputImage.value },
+                            {
+                                inlineData: {
+                                    mimeType: "image/png",
+                                    data: uploadedImageBase64
+                                }
+                            }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                }
+            };
+            await fetchData(apiImageToImage, payload, outputImageImage, outputPlaceholderImage, loadingMessageImage, generateButtonImage, 'flash');
+        });
+
+        // Text-to-Image Logic
+        generateButtonText.addEventListener('click', async () => {
+            if (!promptInputText.value) {
+                alert('Please enter a prompt.');
+                return;
+            }
+            outputSectionText.classList.remove('hidden');
+            generateButtonText.disabled = true;
+            loadingMessageText.classList.remove('hidden');
+            outputImageText.classList.add('hidden');
+            outputPlaceholderText.classList.add('hidden');
+            const payload = {
+                instances: [{ prompt: promptInputText.value }],
+                parameters: { "sampleCount": 1 }
+            };
+            await fetchData(apiTextToImage, payload, outputImageText, outputPlaceholderText, loadingMessageText, generateButtonText, 'imagen');
+        });
+
+        // Reusable fetch function
+        async function fetchData(apiUrl, payload, outputImage, outputPlaceholder, loadingMessage, button, modelType) {
+            let retries = 0;
+            const maxRetries = 3;
+            const delay = 1000;
+            const fetchAndRetry = async () => {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(`API error: ${JSON.stringify(error)}`);
+                    }
+                    const result = await response.json();
+                    let base64Data;
+                    if (modelType === 'flash') {
+                        base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                    } else if (modelType === 'imagen') {
+                        base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+                    }
+                    if (base64Data) {
+                        outputImage.src = `data:image/png;base64,${base64Data}`;
+                        outputImage.classList.remove('hidden');
+                        outputPlaceholder.classList.add('hidden');
+                    } else {
+                        outputPlaceholder.innerText = "Failed to generate image. Please try again.";
+                        outputPlaceholder.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    if (retries < maxRetries) {
+                        retries++;
+                        setTimeout(() => fetchAndRetry(), delay * Math.pow(2, retries));
+                    } else {
+                        console.error("Fetch error:", error);
+                        outputPlaceholder.innerText = "An error occurred. Please try again.";
+                        outputPlaceholder.classList.remove('hidden');
+                    }
+                } finally {
+                    if (retries >= maxRetries || outputImage.src) {
+                        button.disabled = false;
+                        loadingMessage.classList.add('hidden');
+                    }
+                }
+            };
+            await fetchAndRetry();
+        }
+
+        // Custom alert message instead of window.alert()
+        window.alert = (message) => {
+            const alertBox = document.createElement('div');
+            alertBox.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+            alertBox.innerHTML = `
+                <div class="bg-custom-gray text-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+                    <p class="text-base font-medium text-center mb-4">${message}</p>
+                    <button id="alert-ok-button" class="w-full bg-vibrant-magenta hover:bg-[#c21481] text-white py-2 rounded-lg">OK</button>
+                </div>
+            `;
+            document.body.appendChild(alertBox);
+            document.getElementById('alert-ok-button').addEventListener('click', () => {
+                document.body.removeChild(alertBox);
+            });
+        };
+    </script>
+</body>
+</html>
